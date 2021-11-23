@@ -44,3 +44,16 @@ old_rbx_string_sub = hookfunction(getrenv().string.sub, function (self, start, f
   end
   return old_rbx_string_sub(self, start, finish)
 end)
+
+-- continue the unlimited string lenght hack by hooking string.len.
+-- this hack work by checking if the param are the one used by the function
+-- the game check like this according to the decompilation of the game:
+-- if p26 == "Text" and string.len(l__Frame__10.MainPanel.Frame.TextBox.Text) > 100 then
+local old_rbx_string_len
+old_rbx_string_len = hookfunction(getrenv().string.len, function (self)
+  if string.len(self) > 100 then
+    return 100
+  else
+    return old_rbx_string_len(self)
+  end
+end)
