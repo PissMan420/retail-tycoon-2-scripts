@@ -1,3 +1,9 @@
+-- require modules from the internet. useful for workng with retail-tycoon-lib.lua and UI libs
+local function httpRequire(url)
+  local scr = game:HttpGet(url, true)
+  return loadstring(scr)()
+end
+
 local Player = game.Players.LocalPlayer
 local PlayerScripts = Player.PlayerScripts
 local ReplicatedStorage = game.ReplicatedStorage
@@ -5,6 +11,7 @@ local ReplicatedStorage = game.ReplicatedStorage
 local UpdateNPCCard = getsenv(PlayerScripts.NPCRender).UpdateNPCCard
 local Functions = require(ReplicatedStorage.Functions)
 local Remotes = ReplicatedStorage.Remotes
+local gameHelper = httpRequire("https://raw.githubusercontent.com/ViniDalvino/retail-tycoon-2-scripts/master/retail-tycoon-lib.lua")
 
 local function getPlayerPlot(playerNameOrChar)
   local player
@@ -51,9 +58,37 @@ end)
 -- if p26 == "Text" and string.len(l__Frame__10.MainPanel.Frame.TextBox.Text) > 100 then
 local old_rbx_string_len
 old_rbx_string_len = hookfunction(getrenv().string.len, function (self)
-  if string.len(self) > 100 then
+  local fenvScript = debug.getfenv(2).script
+  local infoScript = debug.getinfo(2, "S").source
+  if infoScript == PlayerScripts.PopupScript or infoScript == PlayerScripts.PopupScript then
     return 100
-  else
-    return old_rbx_string_len(self)
   end
 end)
+
+
+local activeFilteredTextInputFunc, activeTextInputFunc
+for k, v in ipairs(getgc()) do
+  if type(v) ~= "function" then continue end
+  if islclosure(v) then
+    local constants = debug.getconstants(v)
+    -- find "ActiveFilteredTextInput" to look out for the censorTextInputFunc
+    for k2, v2 in pairs(constants) do
+      if v2 == "ActiveFilteredTextInput" then
+        activeFilteredTextInputFunc = v
+      end
+    end
+    -- find the "ActiveTextInput" to look out for the activeTextInputFunc
+    for k2, v2 in pairs(constants) do
+      if v2 == "ActiveTextInput" then
+        activeTextInputFunc = v
+      end
+    end
+  end
+end
+
+-- hook the function that censor text
+hookfunction(activeFilteredTextInputFunc, function (...)
+  local args = {...}
+  return gameHelper.popupTextInput(table.unpack(args))
+end)
+print("hooked activeFilteredTextInputFunc 😎")
